@@ -20,6 +20,9 @@ class DepositSeeder extends Seeder
         $dropPoints = DropPoint::where('is_active', true)->pluck('id', 'name');
         $categories = Category::pluck('id', 'name');
 
+        // Petugas yang bertugas di tiap drop point = penerima barang
+        $officers = User::where('role', User::ROLE_ADMIN)->pluck('id', 'drop_point_id');
+
         // Format barang: [nama, kategori, jumlah, berat (kg), kondisi]
         $deposits = [
             [
@@ -69,10 +72,13 @@ class DepositSeeder extends Seeder
         ];
 
         foreach ($deposits as $data) {
+            $dropPointId = $dropPoints[$data['drop_point']];
+
             $deposit = Deposit::create([
                 'deposit_number' => Deposit::generateNumber($data['date']),
                 'user_id' => $users[$data['email']],
-                'drop_point_id' => $dropPoints[$data['drop_point']],
+                'received_by' => $officers[$dropPointId],
+                'drop_point_id' => $dropPointId,
                 'deposit_date' => $data['date'],
                 'status' => Deposit::STATUS_COLLECTED,
             ]);

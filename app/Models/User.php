@@ -7,11 +7,12 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password', 'role'])]
+#[Fillable(['name', 'email', 'password', 'role', 'drop_point_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -46,6 +47,22 @@ class User extends Authenticatable
     public function deposits(): HasMany
     {
         return $this->hasMany(Deposit::class);
+    }
+
+    /**
+     * Drop point tempat admin/petugas bertugas (kosong untuk penyetor).
+     */
+    public function dropPoint(): BelongsTo
+    {
+        return $this->belongsTo(DropPoint::class);
+    }
+
+    /**
+     * Setoran yang diterima oleh admin/petugas ini (deposits.received_by).
+     */
+    public function receivedDeposits(): HasMany
+    {
+        return $this->hasMany(Deposit::class, 'received_by');
     }
 
     public function isAdmin(): bool
