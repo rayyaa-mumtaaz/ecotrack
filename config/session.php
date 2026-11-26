@@ -38,6 +38,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Idle Timeout (EcoTrack)
+    |--------------------------------------------------------------------------
+    |
+    | Batas waktu (menit) tanpa aktivitas sebelum pengguna otomatis logout.
+    | Dipakai oleh middleware App\Http\Middleware\LogoutIfIdle dan timer
+    | JavaScript di layout. Untuk demo, set SESSION_IDLE_TIMEOUT=1 di .env.
+    |
+    */
+
+    'idle_timeout' => (int) env('SESSION_IDLE_TIMEOUT', 15),
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Encryption
     |--------------------------------------------------------------------------
     |

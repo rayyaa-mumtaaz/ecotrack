@@ -6,3 +6,6 @@
 
 @fonts
 @vite(['resources/css/app.css', 'resources/js/app.js'])
+
+{{-- Aset tambahan per halaman, misalnya peta: @push('head') @vite('resources/js/map.js') @endpush --}}
+@stack('head')

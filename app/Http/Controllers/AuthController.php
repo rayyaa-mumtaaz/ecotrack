@@ -29,7 +29,9 @@ class AuthController extends Controller
             'password.required' => 'Password wajib diisi.',
         ]);
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // Tanpa "remember me": cookie remember-me akan login ulang otomatis
+        // sehingga auto-logout karena tidak aktif (LogoutIfIdle) tidak berlaku.
+        if (! Auth::attempt($credentials)) {
             return back()
                 ->withErrors(['email' => 'Email atau password salah.'])
                 ->onlyInput('email');
