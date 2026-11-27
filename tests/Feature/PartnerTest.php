@@ -16,7 +16,7 @@ class PartnerTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => User::ROLE_ADMIN]);
+        return User::factory()->create(['role' => User::ROLE_SUPERADMIN]);
     }
 
     private function validData(array $override = []): array
@@ -37,11 +37,11 @@ class PartnerTest extends TestCase
     {
         $this->seed();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
-            ->get('/admin/partners?type=craftsman')
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
+            ->get('/admin/partners?type=collector')
             ->assertOk()
-            ->assertSee('Pengrajin Kreasi Contoh')
-            ->assertDontSee('Pengepul Elektronik Contoh');
+            ->assertSee('UD Mitra Rosok Elektronik')
+            ->assertDontSee('CV Lestari Daur Elektronik');
     }
 
     public function test_admin_can_create_partner(): void
@@ -67,7 +67,7 @@ class PartnerTest extends TestCase
         $this->seed();
         $partner = Partner::where('type', Partner::TYPE_RECYCLER)->first();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
             ->get("/admin/partners/{$partner->id}")
             ->assertOk()
             ->assertSee('PCK-20261110-0001');
@@ -78,7 +78,7 @@ class PartnerTest extends TestCase
         $this->seed();
         $partner = Partner::where('type', Partner::TYPE_RECYCLER)->first();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
             ->delete("/admin/partners/{$partner->id}")
             ->assertSessionHas('error');
 

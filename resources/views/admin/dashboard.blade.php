@@ -7,12 +7,18 @@
 @endpush
 
 @section('content')
-    <x-page-header title="Ringkasan EcoTrack" description="Data setoran sampah elektronik yang tercatat di sistem.">
+    @php
+        // Petugas hanya melihat data drop point tempat ia bertugas
+        $limited = auth()->user()->isLimitedToDropPoint();
+        $scopeLabel = $limited ? (auth()->user()->dropPoint?->name ?? 'belum ditugaskan ke drop point') : 'semua drop point';
+    @endphp
+
+    <x-page-header title="Ringkasan EcoTrack" :description="'Data setoran sampah elektronik: ' . $scopeLabel . '.'">
         <x-button :href="route('admin.deposits.create')">+ Catat Setoran</x-button>
     </x-page-header>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <x-stat-card title="Total Setoran" :value="number_format($stats['total_deposits'])" icon="deposit" hint="Seluruh transaksi" />
+        <x-stat-card title="Total Setoran" :value="number_format($stats['total_deposits'])" icon="deposit" :hint="$limited ? 'Di drop point Anda' : 'Seluruh transaksi'" />
         <x-stat-card title="Total Berat" :value="number_format($stats['total_weight'], 2, ',', '.') . ' kg'" icon="box" hint="E-waste terkumpul" />
         <x-stat-card title="Penyetor" :value="number_format($stats['total_users'])" icon="users" hint="Akun role user" />
         <x-stat-card title="Drop Point Aktif" :value="number_format($stats['active_drop_points'])" icon="map-pin" hint="Lokasi beroperasi" />
@@ -48,7 +54,7 @@
 
         <x-card title="Sebaran Drop Point" :padding="false">
             <x-slot:actions>
-                <a href="{{ route('admin.drop-points.index') }}" class="text-sm text-emerald-700 hover:underline">Kelola</a>
+                <a href="{{ route('admin.drop-points.index') }}" class="text-sm text-emerald-700 hover:underline">{{ auth()->user()->isSuperadmin() ? 'Kelola' : 'Lihat' }}</a>
             </x-slot:actions>
             <div id="drop-point-map" class="isolate h-72 w-full rounded-b-xl"
                 data-url="{{ route('drop-points.map-data') }}"

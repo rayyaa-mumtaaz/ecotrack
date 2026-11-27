@@ -8,7 +8,7 @@
 @endphp
 
 @section('content')
-    <x-page-header title="Laporan" :description="'Periode: ' . $filters['label']">
+    <x-page-header title="Laporan" :description="'Periode: ' . $filters['label'] . ' · ' . $filters['drop_point']">
         <x-button variant="secondary" :href="route('admin.reports.export.pdf', $query)">Ekspor PDF</x-button>
         <x-button :href="route('admin.reports.export.excel', $query)">Ekspor Excel</x-button>
     </x-page-header>

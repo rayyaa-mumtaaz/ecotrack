@@ -12,7 +12,7 @@ use Illuminate\Database\Seeder;
 class DepositSeeder extends Seeder
 {
     /**
-     * Data contoh transaksi setoran beserta detail barang.
+     * Transaksi setoran awal beserta detail barang (semua di Drop Point Lapangan STS).
      */
     public function run(): void
     {
@@ -21,13 +21,13 @@ class DepositSeeder extends Seeder
         $categories = Category::pluck('id', 'name');
 
         // Petugas yang bertugas di tiap drop point = penerima barang
-        $officers = User::where('role', User::ROLE_ADMIN)->pluck('id', 'drop_point_id');
+        $officers = User::where('role', User::ROLE_ADMIN)->whereNotNull('drop_point_id')->pluck('id', 'drop_point_id');
 
         // Format barang: [nama, kategori, jumlah, berat (kg), kondisi]
         $deposits = [
             [
-                'email' => 'rayyaa@ecotrack.test',
-                'drop_point' => 'Drop Point Gedung Utama',
+                'email' => 'rayyaa@ecotrack.com',
+                'drop_point' => 'Drop Point Lapangan STS',
                 'date' => '2026-10-20',
                 'items' => [
                     ['Laptop bekas', 'Perangkat komputer', 1, 2.10, DepositItem::CONDITION_BROKEN],
@@ -35,8 +35,8 @@ class DepositSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'tristan@ecotrack.test',
-                'drop_point' => 'Drop Point Perpustakaan',
+                'email' => 'tristan@ecotrack.com',
+                'drop_point' => 'Drop Point Lapangan STS',
                 'date' => '2026-11-03',
                 'items' => [
                     ['Handphone', 'Perangkat komunikasi', 2, 0.40, DepositItem::CONDITION_DAMAGED],
@@ -44,16 +44,16 @@ class DepositSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'mumtaaz@ecotrack.test',
-                'drop_point' => 'Drop Point Gedung Utama',
+                'email' => 'mumtaaz@ecotrack.com',
+                'drop_point' => 'Drop Point Lapangan STS',
                 'date' => '2026-11-05',
                 'items' => [
                     ['Monitor CRT', 'Perangkat komputer', 1, 7.50, DepositItem::CONDITION_BROKEN],
                 ],
             ],
             [
-                'email' => 'rayyaa@ecotrack.test',
-                'drop_point' => 'Drop Point Perpustakaan',
+                'email' => 'rayyaa@ecotrack.com',
+                'drop_point' => 'Drop Point Lapangan STS',
                 'date' => '2026-11-12',
                 'items' => [
                     ['Baterai AA', 'Perangkat elektronik kecil', 20, 0.46, DepositItem::CONDITION_BROKEN],
@@ -61,8 +61,8 @@ class DepositSeeder extends Seeder
                 ],
             ],
             [
-                'email' => 'tristan@ecotrack.test',
-                'drop_point' => 'Drop Point Gedung Utama',
+                'email' => 'tristan@ecotrack.com',
+                'drop_point' => 'Drop Point Lapangan STS',
                 'date' => '2026-11-18',
                 'items' => [
                     ['Mouse', 'Perangkat komputer', 3, 0.30, DepositItem::CONDITION_WORKING],

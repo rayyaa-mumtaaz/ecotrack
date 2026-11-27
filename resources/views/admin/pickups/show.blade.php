@@ -10,7 +10,9 @@
 
     <x-page-header :title="$pickup->pickup_number" :description="'Diangkut ' . $pickup->pickup_date->format('d/m/Y') . ' ke ' . ($pickup->partner?->name ?? '—')">
         <x-button variant="secondary" :href="route('admin.pickups.index')">Kembali</x-button>
-        <x-button :href="route('admin.pickups.edit', $pickup)">Ubah</x-button>
+        @if ($canManage)
+            <x-button :href="route('admin.pickups.edit', $pickup)">Ubah</x-button>
+        @endif
     </x-page-header>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -64,7 +66,9 @@
             </x-card>
 
             <x-card title="Aksi">
-                @if ($shippedCount > 0)
+                @if (! $canManage)
+                    <p class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-600">Pengangkutan ini memuat setoran dari drop point lain. Perubahan hanya dapat dilakukan superadmin.</p>
+                @elseif ($shippedCount > 0)
                     <form method="POST" action="{{ route('admin.pickups.complete', $pickup) }}"
                         data-confirm="Tandai {{ $shippedCount }} setoran sudah diserahkan ke {{ $pickup->partner?->name }}?">
                         @csrf
@@ -76,7 +80,7 @@
                     <p class="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-700">Semua setoran sudah diserahkan ke mitra.</p>
                 @endif
 
-                @if ($completedCount === 0)
+                @if ($canManage && $completedCount === 0)
                     <form method="POST" action="{{ route('admin.pickups.destroy', $pickup) }}" class="mt-4"
                         data-confirm="Batalkan pengangkutan {{ $pickup->pickup_number }}? Setoran kembali berstatus Terkumpul.">
                         @csrf

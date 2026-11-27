@@ -21,7 +21,8 @@ use Illuminate\Support\Facades\Route;
 | guest      : hanya untuk yang belum login
 | auth       : harus login
 | idle       : logout otomatis jika lama tidak aktif (middleware LogoutIfIdle)
-| role:admin : khusus admin (middleware CheckUserRole)
+| role:superadmin       : khusus superadmin (koordinator)
+| role:superadmin,admin : superadmin atau petugas drop point (middleware CheckUserRole)
 | role:user  : khusus user / penyetor
 */
 
@@ -43,26 +44,30 @@ Route::middleware(['auth', 'idle'])->group(function () {
     // Modul 3 — Data peta drop point (JSON, dipanggil fetch() tiap 30 detik; admin & user)
     Route::get('/drop-points/map-data', [DropPointMapController::class, 'data'])->name('drop-points.map-data');
 
-    // Halaman admin
-    Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
+    // Halaman admin: superadmin (koordinator) dan petugas drop point
+    Route::middleware('role:superadmin,admin')->prefix('admin')->name('admin.')->group(function () {
+        // Master data: tambah, ubah, hapus hanya superadmin.
+        // Didaftarkan sebelum route detail agar URL /create tidak dianggap sebagai {id}.
+        Route::middleware('role:superadmin')->group(function () {
+            Route::resource('categories', CategoryController::class)->except(['index', 'show']); // Modul 2
+            Route::resource('drop-points', DropPointController::class)->except(['index', 'show']); // Modul 3
+            Route::resource('partners', PartnerController::class)->except(['index', 'show']); // Modul 6
+        });
+
+        // Master data: daftar dan detail boleh dilihat petugas
+        Route::resource('categories', CategoryController::class)->only('index');
+        Route::resource('drop-points', DropPointController::class)->only(['index', 'show']);
+        Route::resource('partners', PartnerController::class)->only(['index', 'show']);
+
         // Modul 5 — Dashboard
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-        // Modul 1 — CRUD pengguna
+        // Modul 1 — CRUD pengguna (petugas hanya mengelola akun penyetor; diatur di controller)
         Route::resource('users', UserController::class)->except('show');
 
-        // Modul 2 — CRUD kategori
-        Route::resource('categories', CategoryController::class)->except('show');
-
-        // Modul 3 — CRUD drop point
-        Route::resource('drop-points', DropPointController::class);
-
-        // Modul 4 — CRUD setoran + ubah status
+        // Modul 4 — CRUD setoran + ubah status (petugas hanya drop point-nya; diatur di controller)
         Route::resource('deposits', DepositController::class);
         Route::patch('/deposits/{deposit}/status', [DepositController::class, 'updateStatus'])->name('deposits.status');
-
-        // Modul 6 — CRUD mitra
-        Route::resource('partners', PartnerController::class);
 
         // Modul 5 — Pengangkutan + tandai diserahkan ke mitra
         Route::resource('pickups', PickupController::class);

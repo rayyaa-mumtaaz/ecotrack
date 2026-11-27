@@ -4,7 +4,9 @@
 
 @section('content')
     <x-page-header title="Mitra Pengelola" description="Pihak penerima e-waste: pendaur ulang, pengrajin, pengepul, servis, dan lainnya.">
-        <x-button :href="route('admin.partners.create')">+ Tambah Mitra</x-button>
+        @if (auth()->user()->isSuperadmin())
+            <x-button :href="route('admin.partners.create')">+ Tambah Mitra</x-button>
+        @endif
     </x-page-header>
 
     <x-card :padding="false">
@@ -55,8 +57,8 @@
                                 </td>
                                 <td class="px-5 py-3"><x-active-badge :active="$partner->is_active" /></td>
                                 <td class="whitespace-nowrap px-5 py-3 text-right">
-                                    <x-table-actions :show="route('admin.partners.show', $partner)" :edit="route('admin.partners.edit', $partner)"
-                                        :destroy="route('admin.partners.destroy', $partner)" :name="'mitra ' . $partner->name" />
+                                    <x-table-actions :show="route('admin.partners.show', $partner)" :edit="auth()->user()->isSuperadmin() ? route('admin.partners.edit', $partner) : null"
+                                        :destroy="auth()->user()->isSuperadmin() ? route('admin.partners.destroy', $partner) : null" :name="'mitra ' . $partner->name" />
                                 </td>
                             </tr>
                         @endforeach

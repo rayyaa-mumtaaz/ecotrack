@@ -8,7 +8,9 @@
 
 @section('content')
     <x-page-header title="Drop Point" description="Lokasi pengumpulan e-waste beserta petugas yang bertugas.">
-        <x-button :href="route('admin.drop-points.create')">+ Tambah Drop Point</x-button>
+        @if (auth()->user()->isSuperadmin())
+            <x-button :href="route('admin.drop-points.create')">+ Tambah Drop Point</x-button>
+        @endif
     </x-page-header>
 
     {{-- Peta sebaran: data diambil dari /drop-points/map-data dan diperbarui tiap 30 detik --}}
@@ -67,13 +69,15 @@
                                 <td class="whitespace-nowrap px-5 py-3 text-right">
                                     <div class="inline-flex items-center gap-3">
                                         <a href="{{ route('admin.drop-points.show', $dropPoint) }}" class="text-emerald-700 hover:underline">Detail</a>
-                                        <a href="{{ route('admin.drop-points.edit', $dropPoint) }}" class="text-emerald-700 hover:underline">Ubah</a>
-                                        <form method="POST" action="{{ route('admin.drop-points.destroy', $dropPoint) }}"
-                                            data-confirm="Hapus drop point {{ $dropPoint->name }}?">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:underline">Hapus</button>
-                                        </form>
+                                        @if (auth()->user()->isSuperadmin())
+                                            <a href="{{ route('admin.drop-points.edit', $dropPoint) }}" class="text-emerald-700 hover:underline">Ubah</a>
+                                            <form method="POST" action="{{ route('admin.drop-points.destroy', $dropPoint) }}"
+                                                data-confirm="Hapus drop point {{ $dropPoint->name }}?">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:underline">Hapus</button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

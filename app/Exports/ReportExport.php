@@ -21,6 +21,7 @@ class ReportExport implements Export, WithMultipleSheets
 
         $summaryRows = [
             ['Periode', $this->report['filters']['label']],
+            ['Drop point', $this->report['filters']['drop_point']],
             ['Dibuat', $this->report['generatedAt']],
             ['Total setoran', $summary['deposits']],
             ['Total berat (kg)', round($summary['weight'], 2)],

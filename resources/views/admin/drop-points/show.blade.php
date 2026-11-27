@@ -9,7 +9,9 @@
 @section('content')
     <x-page-header :title="$dropPoint->name" :description="$dropPoint->address">
         <x-button variant="secondary" :href="route('admin.drop-points.index')">Kembali</x-button>
-        <x-button :href="route('admin.drop-points.edit', $dropPoint)">Ubah</x-button>
+        @if (auth()->user()->isSuperadmin())
+            <x-button :href="route('admin.drop-points.edit', $dropPoint)">Ubah</x-button>
+        @endif
     </x-page-header>
 
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -62,7 +64,7 @@
                         </div>
                     </div>
                 @empty
-                    <p class="text-sm text-gray-500">Belum ada petugas. Penugasan diatur di menu Pengguna (Modul 1).</p>
+                    <p class="text-sm text-gray-500">Belum ada petugas. Penugasan diatur di menu Pengguna.</p>
                 @endforelse
             </x-card>
         </div>
@@ -101,6 +103,7 @@
         @endif
     </x-card>
 
+    @if (auth()->user()->isSuperadmin())
     <div class="mt-6">
         <form method="POST" action="{{ route('admin.drop-points.destroy', $dropPoint) }}"
             data-confirm="Hapus drop point {{ $dropPoint->name }}?">
@@ -109,4 +112,5 @@
             <x-button variant="danger">Hapus Drop Point</x-button>
         </form>
     </div>
+    @endif
 @endsection

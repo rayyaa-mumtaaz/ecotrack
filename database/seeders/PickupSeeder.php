@@ -11,7 +11,7 @@ use Illuminate\Support\Collection;
 class PickupSeeder extends Seeder
 {
     /**
-     * Data contoh pengangkutan.
+     * Pengangkutan awal.
      * Hasil: 1 setoran Selesai, 2 setoran Diangkut, 2 setoran tetap Terkumpul.
      */
     public function run(): void
@@ -22,8 +22,8 @@ class PickupSeeder extends Seeder
         // Pengangkutan pertama: sudah diserahkan ke mitra pendaur ulang
         $this->createPickup('2026-11-10', $partners[Partner::TYPE_RECYCLER], $deposits->take(1), Deposit::STATUS_COMPLETED);
 
-        // Pengangkutan kedua: masih dalam pengangkutan ke pengrajin
-        $this->createPickup('2026-11-17', $partners[Partner::TYPE_CRAFTSMAN], $deposits->slice(1, 2), Deposit::STATUS_SHIPPED);
+        // Pengangkutan kedua: masih dalam pengangkutan ke pengepul
+        $this->createPickup('2026-11-17', $partners[Partner::TYPE_COLLECTOR], $deposits->slice(1, 2), Deposit::STATUS_SHIPPED);
     }
 
     private function createPickup(string $date, int $partnerId, Collection $deposits, string $status): void

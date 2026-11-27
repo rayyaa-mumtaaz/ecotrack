@@ -33,7 +33,7 @@ class DropPointMapController extends Controller
             ->withSum(['deposits as collected_weight' => function ($query) {
                 $query->where('status', Deposit::STATUS_COLLECTED);
             }], 'total_weight')
-            ->when(! $request->user()->isAdmin(), fn ($query) => $query->where('is_active', true))
+            ->when(! $request->user()->isStaff(), fn ($query) => $query->where('is_active', true))
             ->orderBy('name')
             ->get()
             ->map(fn (DropPoint $dropPoint) => [

@@ -16,12 +16,18 @@ class DropPointTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => User::ROLE_ADMIN]);
+        return User::factory()->create(['role' => User::ROLE_SUPERADMIN]);
     }
 
     private function penyetor(): User
     {
         return User::factory()->create(['role' => User::ROLE_USER]);
+    }
+
+    /** Drop point nonaktif tambahan (seeder hanya punya 1 drop point aktif). */
+    private function inactiveDropPoint(): DropPoint
+    {
+        return DropPoint::create($this->validData(['name' => 'Drop Point Gedung Kuliah', 'is_active' => false]));
     }
 
     private function validData(array $override = []): array
@@ -39,26 +45,27 @@ class DropPointTest extends TestCase
     public function test_admin_can_see_drop_point_list(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
 
         $this->actingAs($admin)
             ->get('/admin/drop-points')
             ->assertOk()
-            ->assertSee('Drop Point Gedung Utama')
-            ->assertSee('Admin EcoTrack')        // petugas tampil
+            ->assertSee('Drop Point Lapangan STS')
+            ->assertSee('Petugas Lapangan STS')  // petugas tampil
             ->assertSee('drop-point-map', false); // peta terpasang
     }
 
     public function test_admin_can_search_drop_point(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
+        $this->inactiveDropPoint();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
 
         $this->actingAs($admin)
-            ->get('/admin/drop-points?search=Perpustakaan')
+            ->get('/admin/drop-points?search=Lapangan')
             ->assertOk()
-            ->assertSee('Drop Point Perpustakaan')
-            ->assertDontSee('Drop Point Kantin');
+            ->assertSee('Drop Point Lapangan STS')
+            ->assertDontSee('Drop Point Gedung Kuliah');
     }
 
     public function test_admin_can_create_drop_point_with_coordinates(): void
@@ -129,13 +136,13 @@ class DropPointTest extends TestCase
     public function test_admin_can_see_detail_with_officers_and_receiver(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
-        $dropPoint = DropPoint::where('name', 'Drop Point Perpustakaan')->first();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
+        $dropPoint = DropPoint::where('name', 'Drop Point Lapangan STS')->first();
 
         $this->actingAs($admin)
             ->get("/admin/drop-points/{$dropPoint->id}")
             ->assertOk()
-            ->assertSee('Petugas Perpustakaan')   // petugas bertugas & penerima setoran
+            ->assertSee('Petugas Lapangan STS')   // petugas bertugas & penerima setoran
             ->assertSee('DEP-20261112-0001')
             ->assertSee('drop-point-picker', false);
     }
@@ -154,8 +161,8 @@ class DropPointTest extends TestCase
     public function test_drop_point_with_deposits_cannot_be_deleted(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
-        $dropPoint = DropPoint::where('name', 'Drop Point Gedung Utama')->first();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
+        $dropPoint = DropPoint::where('name', 'Drop Point Lapangan STS')->first();
 
         $this->actingAs($admin)
             ->from("/admin/drop-points/{$dropPoint->id}")
@@ -187,38 +194,40 @@ class DropPointTest extends TestCase
     public function test_map_data_for_user_only_contains_active_drop_points(): void
     {
         $this->seed();
-        $user = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $this->inactiveDropPoint();
+        $user = User::where('email', 'rayyaa@ecotrack.com')->first();
 
         $response = $this->actingAs($user)->getJson('/drop-points/map-data')->assertOk();
 
         $names = collect($response->json('drop_points'))->pluck('name');
-        $this->assertContains('Drop Point Gedung Utama', $names);
-        $this->assertNotContains('Drop Point Kantin', $names); // nonaktif
+        $this->assertContains('Drop Point Lapangan STS', $names);
+        $this->assertNotContains('Drop Point Gedung Kuliah', $names); // nonaktif
     }
 
     public function test_map_data_contains_officers_and_collected_items(): void
     {
         $this->seed();
-        $user = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $user = User::where('email', 'rayyaa@ecotrack.com')->first();
 
         $response = $this->actingAs($user)->getJson('/drop-points/map-data');
-        $perpustakaan = collect($response->json('drop_points'))->firstWhere('name', 'Drop Point Perpustakaan');
+        $sts = collect($response->json('drop_points'))->firstWhere('name', 'Drop Point Lapangan STS');
 
-        // Seeder: di Perpustakaan ada 1 setoran berstatus Terkumpul (DEP-20261112-0001, 1,26 kg)
-        $this->assertSame(['Petugas Perpustakaan'], $perpustakaan['officers']);
-        $this->assertSame(1, $perpustakaan['collected_count']);
-        $this->assertEquals(1.26, $perpustakaan['collected_weight']);
-        $this->assertEquals(-8.1641, $perpustakaan['latitude']);
+        // Seeder: 2 setoran masih Terkumpul (DEP-20261112-0001 1,26 kg + DEP-20261118-0001 0,65 kg)
+        $this->assertSame(['Petugas Lapangan STS'], $sts['officers']);
+        $this->assertSame(2, $sts['collected_count']);
+        $this->assertEquals(1.91, $sts['collected_weight']);
+        $this->assertEquals(-8.1658479, $sts['latitude']);
     }
 
     public function test_map_data_for_admin_includes_inactive_drop_points(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
+        $this->inactiveDropPoint();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
 
         $names = collect($this->actingAs($admin)->getJson('/drop-points/map-data')->json('drop_points'))->pluck('name');
 
-        $this->assertContains('Drop Point Kantin', $names);
+        $this->assertContains('Drop Point Gedung Kuliah', $names);
     }
 
     public function test_map_data_requires_login(): void

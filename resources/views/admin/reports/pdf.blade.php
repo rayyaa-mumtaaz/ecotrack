@@ -33,7 +33,7 @@
     <div class="header">
         <h1>Laporan EcoTrack</h1>
         <div>Pengelolaan Setoran Limbah Elektronik</div>
-        <div class="muted">Periode: {{ $filters['label'] }} · Dibuat: {{ $generatedAt }}</div>
+        <div class="muted">Periode: {{ $filters['label'] }} · {{ $filters['drop_point'] }} · Dibuat: {{ $generatedAt }}</div>
     </div>
 
     <h2>Ringkasan</h2>

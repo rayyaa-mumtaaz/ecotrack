@@ -3,18 +3,20 @@
 @section('title', 'Pengguna')
 
 @section('content')
-    <x-page-header title="Pengguna" description="Akun admin/petugas dan user (penyetor).">
+    <x-page-header title="Pengguna" :description="auth()->user()->isSuperadmin() ? 'Akun superadmin, petugas drop point, dan penyetor.' : 'Akun penyetor.'">
         <x-button :href="route('admin.users.create')">+ Tambah Pengguna</x-button>
     </x-page-header>
 
     <x-card :padding="false">
         <x-search-bar :action="route('admin.users.index')" placeholder="Cari nama / email...">
+            @if (auth()->user()->isSuperadmin())
             <select name="role" class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200">
                 <option value="">Semua role</option>
                 @foreach (\App\Models\User::ROLES as $value => $label)
                     <option value="{{ $value }}" @selected(request('role') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
+            @endif
         </x-search-bar>
 
         @if ($users->isEmpty())
@@ -46,13 +48,14 @@
                                 <td class="whitespace-nowrap px-5 py-3">
                                     <span @class([
                                         'rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                                        'bg-purple-100 text-purple-700' => $user->isSuperadmin(),
                                         'bg-emerald-100 text-emerald-700' => $user->isAdmin(),
-                                        'bg-blue-100 text-blue-700' => ! $user->isAdmin(),
+                                        'bg-blue-100 text-blue-700' => ! $user->isStaff(),
                                     ])>{{ \App\Models\User::ROLES[$user->role] }}</span>
                                 </td>
-                                <td class="px-5 py-3 text-gray-600">{{ $user->isAdmin() ? ($user->dropPoint?->name ?? 'Belum ditugaskan') : '—' }}</td>
+                                <td class="px-5 py-3 text-gray-600">{{ $user->isAdmin() ? ($user->dropPoint?->name ?? 'Belum ditugaskan') : ($user->isSuperadmin() ? 'Semua drop point' : '—') }}</td>
                                 <td class="whitespace-nowrap px-5 py-3 text-right text-gray-600">
-                                    @if ($user->isAdmin())
+                                    @if ($user->isStaff())
                                         {{ $user->received_deposits_count }} <span class="text-xs text-gray-400">diterima</span>
                                     @else
                                         {{ $user->deposits_count }} <span class="text-xs text-gray-400">disetor</span>

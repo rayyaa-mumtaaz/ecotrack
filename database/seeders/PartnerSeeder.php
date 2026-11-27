@@ -8,34 +8,25 @@ use Illuminate\Database\Seeder;
 class PartnerSeeder extends Seeder
 {
     /**
-     * Data contoh mitra pengelola e-waste. Bukan mitra sebenarnya.
+     * Mitra pengelola e-waste. Nama dan kontak fiktif (bukan usaha sebenarnya);
+     * nomor telepon sengaja dikosongkan agar tidak mengarah ke nomor milik orang lain.
      */
     public function run(): void
     {
         $partners = [
             [
-                'name' => 'Mitra Daur Ulang Contoh',
+                'name' => 'CV Lestari Daur Elektronik',
                 'type' => Partner::TYPE_RECYCLER,
-                'contact_person' => 'Bagian Penerimaan',
-                'phone' => '081200000001',
-                'address' => 'Kawasan Industri (contoh)',
-                'description' => 'Mengolah komponen elektronik menjadi bahan baku.',
+                'contact_person' => 'Sulastri',
+                'address' => 'Kec. Kaliwates, Jember',
+                'description' => 'Memilah dan mengolah komponen elektronik (logam, plastik, PCB) menjadi bahan baku daur ulang.',
             ],
             [
-                'name' => 'Pengrajin Kreasi Contoh',
-                'type' => Partner::TYPE_CRAFTSMAN,
-                'contact_person' => 'Pemilik Usaha',
-                'phone' => '081200000002',
-                'address' => 'Sentra Kerajinan (contoh)',
-                'description' => 'Membuat kerajinan dari kabel, PCB, dan casing bekas.',
-            ],
-            [
-                'name' => 'Pengepul Elektronik Contoh',
+                'name' => 'UD Mitra Rosok Elektronik',
                 'type' => Partner::TYPE_COLLECTOR,
-                'contact_person' => 'Pengelola Gudang',
-                'phone' => '081200000003',
-                'address' => 'Pasar Barang Bekas (contoh)',
-                'description' => 'Menampung e-waste dalam jumlah besar.',
+                'contact_person' => 'Mulyono',
+                'address' => 'Kec. Sumbersari, Jember',
+                'description' => 'Menampung barang elektronik bekas dalam jumlah besar untuk disalurkan ke pengolah.',
             ],
         ];
 

@@ -5,7 +5,9 @@
 @section('content')
     <x-page-header :title="$partner->name" :description="$partner->typeLabel()">
         <x-button variant="secondary" :href="route('admin.partners.index')">Kembali</x-button>
-        <x-button :href="route('admin.partners.edit', $partner)">Ubah</x-button>
+        @if (auth()->user()->isSuperadmin())
+            <x-button :href="route('admin.partners.edit', $partner)">Ubah</x-button>
+        @endif
     </x-page-header>
 
     <div class="grid gap-6 lg:grid-cols-3">

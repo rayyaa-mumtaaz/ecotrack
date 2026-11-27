@@ -24,7 +24,7 @@ class PickupTest extends TestCase
         parent::setUp();
 
         $this->seed();
-        $this->admin = User::where('email', 'admin@ecotrack.test')->first();
+        $this->admin = User::where('email', 'superadmin@ecotrack.com')->first();
     }
 
     private function collectedIds(): array
@@ -152,7 +152,7 @@ class PickupTest extends TestCase
 
         $this->actingAs($this->admin)->get("/admin/pickups/{$pickup->id}")
             ->assertOk()
-            ->assertSee('Pengrajin Kreasi Contoh')
+            ->assertSee('UD Mitra Rosok Elektronik')
             ->assertSee('DEP-20261103-0001');
     }
 
@@ -161,18 +161,18 @@ class PickupTest extends TestCase
         $pickup = Pickup::where('pickup_number', 'PCK-20261117-0001')->first();
         $this->actingAs($this->admin)->patch("/admin/pickups/{$pickup->id}/complete");
 
-        $tristan = User::where('email', 'tristan@ecotrack.test')->first();
+        $tristan = User::where('email', 'tristan@ecotrack.com')->first();
         $deposit = Deposit::where('deposit_number', 'DEP-20261103-0001')->first();
 
         $this->actingAs($tristan)
             ->get("/my-deposits/{$deposit->id}")
             ->assertOk()
-            ->assertSee('Diserahkan ke Pengrajin Kreasi Contoh');
+            ->assertSee('Diserahkan ke UD Mitra Rosok Elektronik');
     }
 
     public function test_user_cannot_access_pickups(): void
     {
-        $user = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $user = User::where('email', 'rayyaa@ecotrack.com')->first();
 
         $this->actingAs($user)->get('/admin/pickups')->assertForbidden();
     }

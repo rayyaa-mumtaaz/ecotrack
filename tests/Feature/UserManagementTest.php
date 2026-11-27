@@ -17,19 +17,19 @@ class UserManagementTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => User::ROLE_ADMIN]);
+        return User::factory()->create(['role' => User::ROLE_SUPERADMIN]);
     }
 
     public function test_admin_can_see_users_with_drop_point(): void
     {
         $this->seed();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
             ->get('/admin/users')
             ->assertOk()
-            ->assertSee('Petugas Perpustakaan')
-            ->assertSee('Drop Point Perpustakaan')
-            ->assertSee('rayyaa@ecotrack.test');
+            ->assertSee('Petugas Lapangan STS')
+            ->assertSee('Drop Point Lapangan STS')
+            ->assertSee('rayyaa@ecotrack.com');
     }
 
     public function test_admin_can_create_user_with_hashed_password(): void
@@ -37,14 +37,14 @@ class UserManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->post('/admin/users', [
                 'name' => 'Penyetor Baru',
-                'email' => 'baru@ecotrack.test',
+                'email' => 'baru@ecotrack.com',
                 'password' => 'rahasia123',
                 'password_confirmation' => 'rahasia123',
                 'role' => User::ROLE_USER,
             ])
             ->assertRedirect('/admin/users');
 
-        $user = User::where('email', 'baru@ecotrack.test')->first();
+        $user = User::where('email', 'baru@ecotrack.com')->first();
         $this->assertTrue(Hash::check('rahasia123', $user->password));
         $this->assertNull($user->drop_point_id);
     }
@@ -55,7 +55,7 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($this->admin())->post('/admin/users', [
             'name' => 'Petugas Baru',
-            'email' => 'petugas2@ecotrack.test',
+            'email' => 'petugas2@ecotrack.com',
             'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123',
             'role' => User::ROLE_ADMIN,
@@ -71,14 +71,14 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($this->admin())->post('/admin/users', [
             'name' => 'Penyetor',
-            'email' => 'p@ecotrack.test',
+            'email' => 'p@ecotrack.com',
             'password' => 'rahasia123',
             'password_confirmation' => 'rahasia123',
             'role' => User::ROLE_USER,
             'drop_point_id' => $dropPoint->id,
         ]);
 
-        $this->assertNull(User::where('email', 'p@ecotrack.test')->first()->drop_point_id);
+        $this->assertNull(User::where('email', 'p@ecotrack.com')->first()->drop_point_id);
     }
 
     public function test_validation_errors(): void
@@ -91,7 +91,7 @@ class UserManagementTest extends TestCase
                 'email' => $existing->email,
                 'password' => 'pendek',
                 'password_confirmation' => 'beda',
-                'role' => 'superadmin',
+                'role' => 'kepala', // role tidak dikenal
             ])
             ->assertSessionHasErrors(['name', 'email', 'password', 'role']);
     }
@@ -120,15 +120,15 @@ class UserManagementTest extends TestCase
 
         $this->actingAs($admin)->delete("/admin/users/{$admin->id}")->assertSessionHas('error');
 
-        $this->assertSame(User::ROLE_ADMIN, $admin->fresh()->role);
+        $this->assertSame(User::ROLE_SUPERADMIN, $admin->fresh()->role);
     }
 
     public function test_user_with_deposits_cannot_be_deleted(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
-        $penyetor = User::where('email', 'rayyaa@ecotrack.test')->first();
-        $petugas = User::where('email', 'petugas@ecotrack.test')->first();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
+        $penyetor = User::where('email', 'rayyaa@ecotrack.com')->first();
+        $petugas = User::where('email', 'petugas@ecotrack.com')->first();
 
         $this->actingAs($admin)->delete("/admin/users/{$penyetor->id}")->assertSessionHas('error');
         $this->actingAs($admin)->delete("/admin/users/{$petugas->id}")->assertSessionHas('error'); // penerima setoran
