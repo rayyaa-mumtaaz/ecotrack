@@ -22,6 +22,7 @@ class Deposit extends Model
     protected $fillable = [
         'deposit_number',
         'user_id',
+        'received_by',
         'drop_point_id',
         'pickup_id',
         'deposit_date',
@@ -41,6 +42,14 @@ class Deposit extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Admin/petugas yang menerima barang (deposits.received_by).
+     */
+    public function receiver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'received_by');
     }
 
     /**
@@ -65,6 +74,23 @@ class Deposit extends Model
     public function items(): HasMany
     {
         return $this->hasMany(DepositItem::class);
+    }
+
+    /**
+     * Status berikutnya (status hanya boleh maju). Null jika sudah Selesai.
+     */
+    public function nextStatus(): ?string
+    {
+        return match ($this->status) {
+            self::STATUS_COLLECTED => self::STATUS_SHIPPED,
+            self::STATUS_SHIPPED => self::STATUS_COMPLETED,
+            default => null,
+        };
+    }
+
+    public function isEditable(): bool
+    {
+        return $this->status === self::STATUS_COLLECTED;
     }
 
     public function statusLabel(): string

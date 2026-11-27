@@ -3,7 +3,9 @@
 <head>
     @include('partials.head')
 </head>
-<body class="min-h-screen bg-gray-50 font-sans text-gray-800 antialiased">
+<body class="min-h-screen bg-gray-50 font-sans text-gray-800 antialiased"
+    data-idle-timeout="{{ config('session.idle_timeout') * 60 }}"
+    data-ping-url="{{ route('session.ping') }}">
     <x-sidebar />
 
     <div class="lg:pl-64">
@@ -27,6 +29,8 @@
             @yield('content')
         </main>
     </div>
+
+    @include('partials.idle-warning')
 
     @stack('scripts')
 </body>
