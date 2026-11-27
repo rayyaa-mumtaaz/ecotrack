@@ -22,7 +22,7 @@ class ReportTest extends TestCase
         parent::setUp();
 
         $this->seed();
-        $this->admin = User::where('email', 'admin@ecotrack.test')->first();
+        $this->admin = User::where('email', 'superadmin@ecotrack.com')->first();
     }
 
     public function test_report_shows_all_period_summary(): void
@@ -33,8 +33,8 @@ class ReportTest extends TestCase
             ->assertSee('Semua periode')
             ->assertSee('12,76 kg')
             ->assertSee('Perangkat komputer')
-            ->assertSee('Petugas Perpustakaan')       // rekap per petugas
-            ->assertSee('Pengrajin')                  // rekap per tipe mitra
+            ->assertSee('Petugas Lapangan STS')       // rekap per petugas
+            ->assertSee('Pengepul')                   // rekap per tipe mitra
             ->assertSee('Oktober 2026')
             ->assertSee('November 2026');
     }
@@ -108,7 +108,7 @@ class ReportTest extends TestCase
 
     public function test_user_cannot_access_reports(): void
     {
-        $user = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $user = User::where('email', 'rayyaa@ecotrack.com')->first();
 
         $this->actingAs($user)->get('/admin/reports')->assertForbidden();
         $this->actingAs($user)->get('/admin/reports/export/pdf')->assertForbidden();

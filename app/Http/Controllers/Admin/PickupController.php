@@ -7,6 +7,7 @@ use App\Models\Deposit;
 use App\Models\DropPoint;
 use App\Models\Partner;
 use App\Models\Pickup;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -14,12 +15,17 @@ use Illuminate\Validation\Rule;
 /**
  * Modul 5 — Pickup Management: pengangkutan setoran ke mitra.
  * Alur status setoran: Terkumpul -> (dimasukkan ke pengangkutan) Diangkut -> (tandai selesai) Selesai.
+ * Petugas hanya melihat pengangkutan yang memuat setoran drop point-nya, dan hanya dapat
+ * mengubah/membatalkan/menyelesaikan pengangkutan yang seluruh setorannya dari drop point-nya.
  */
 class PickupController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $pickups = Pickup::with('partner')
+            ->when($user->isLimitedToDropPoint(), fn ($query) => $query->whereHas('deposits', fn ($query) => $query->where('drop_point_id', $user->drop_point_id)))
             ->withCount(['deposits', 'deposits as completed_count' => function ($query) {
                 $query->where('status', Deposit::STATUS_COMPLETED);
             }])
@@ -31,18 +37,28 @@ class PickupController extends Controller
             ->withQueryString();
 
         $partners = Partner::orderBy('name')->pluck('name', 'id');
-        $waitingCount = Deposit::where('status', Deposit::STATUS_COLLECTED)->count();
+        $waitingCount = Deposit::where('status', Deposit::STATUS_COLLECTED)
+            ->when($user->isLimitedToDropPoint(), fn ($query) => $query->where('drop_point_id', $user->drop_point_id))
+            ->count();
 
         return view('admin.pickups.index', compact('pickups', 'partners', 'waitingCount'));
     }
 
-    public function create()
+    public function create(Request $request)
     {
+        $user = $request->user();
+
+        if ($user->isLimitedToDropPoint() && $user->drop_point_id === null) {
+            return redirect()->route('admin.pickups.index')
+                ->with('error', 'Anda belum ditugaskan ke drop point. Hubungi superadmin.');
+        }
+
         return view('admin.pickups.create', [
             'pickup' => new Pickup(['pickup_date' => now()->toDateString()]),
             'partners' => $this->partnerOptions(),
-            'availableDeposits' => $this->availableDeposits(),
-            'dropPoints' => DropPoint::orderBy('name')->pluck('name', 'id'),
+            'availableDeposits' => $this->availableDeposits($user),
+            'dropPoints' => DropPoint::when($user->isLimitedToDropPoint(), fn ($query) => $query->where('id', $user->drop_point_id))
+                ->orderBy('name')->pluck('name', 'id'),
         ]);
     }
 
@@ -52,14 +68,21 @@ class PickupController extends Controller
      */
     public function store(Request $request)
     {
+        $user = $request->user();
+
         $data = $request->validate([
             'pickup_date' => 'required|date|before_or_equal:today',
             'partner_id' => ['required', Rule::exists('partners', 'id')->where('is_active', true)],
             'notes' => 'nullable|string|max:1000',
             'deposit_ids' => 'required|array|min:1',
             // Hanya setoran Terkumpul yang belum masuk pengangkutan lain
-            'deposit_ids.*' => ['integer', 'distinct', Rule::exists('deposits', 'id')->where(function ($query) {
+            // Petugas hanya boleh memilih setoran dari drop point-nya
+            'deposit_ids.*' => ['integer', 'distinct', Rule::exists('deposits', 'id')->where(function ($query) use ($user) {
                 $query->where('status', Deposit::STATUS_COLLECTED)->whereNull('pickup_id');
+
+                if ($user->isLimitedToDropPoint()) {
+                    $query->where('drop_point_id', $user->drop_point_id);
+                }
             })],
         ], [
             'deposit_ids.required' => 'Pilih minimal satu setoran yang diangkut.',
@@ -92,18 +115,29 @@ class PickupController extends Controller
             ->with('success', "Pengangkutan {$pickup->pickup_number} dicatat. " . count($data['deposit_ids']) . ' setoran berstatus Diangkut.');
     }
 
-    public function show(Pickup $pickup)
+    public function show(Request $request, Pickup $pickup)
     {
+        $user = $request->user();
+
+        // Petugas boleh melihat jika ada setoran dari drop point-nya
+        if ($user->isLimitedToDropPoint() && ! $pickup->deposits()->where('drop_point_id', $user->drop_point_id)->exists()) {
+            abort(403, 'Pengangkutan ini tidak memuat setoran dari drop point Anda.');
+        }
+
+        $canManage = $this->canManage($user, $pickup);
+
         $pickup->load(['partner', 'deposits' => fn ($query) => $query->with(['user', 'dropPoint', 'receiver'])->withCount('items')]);
 
-        return view('admin.pickups.show', compact('pickup'));
+        return view('admin.pickups.show', compact('pickup', 'canManage'));
     }
 
     /**
      * Ubah tanggal, mitra, dan catatan. Daftar setoran tidak diubah di sini.
      */
-    public function edit(Pickup $pickup)
+    public function edit(Request $request, Pickup $pickup)
     {
+        $this->authorizeManage($request, $pickup);
+
         return view('admin.pickups.edit', [
             'pickup' => $pickup,
             'partners' => $this->partnerOptions($pickup->partner_id),
@@ -112,6 +146,8 @@ class PickupController extends Controller
 
     public function update(Request $request, Pickup $pickup)
     {
+        $this->authorizeManage($request, $pickup);
+
         $data = $request->validate([
             'pickup_date' => 'required|date|before_or_equal:today',
             // Mitra harus aktif; mitra lama tetap boleh walau sudah nonaktif
@@ -134,8 +170,10 @@ class PickupController extends Controller
      * Batalkan pengangkutan: setoran dikembalikan ke status Terkumpul.
      * Tidak boleh jika sudah ada setoran yang Selesai (sudah diserahkan ke mitra).
      */
-    public function destroy(Pickup $pickup)
+    public function destroy(Request $request, Pickup $pickup)
     {
+        $this->authorizeManage($request, $pickup);
+
         if ($pickup->deposits()->where('status', Deposit::STATUS_COMPLETED)->exists()) {
             return back()->with('error', "Pengangkutan {$pickup->pickup_number} sudah diserahkan ke mitra sehingga tidak dapat dibatalkan.");
         }
@@ -152,8 +190,10 @@ class PickupController extends Controller
     /**
      * Tandai semua setoran dalam pengangkutan sudah diserahkan ke mitra (Selesai).
      */
-    public function complete(Pickup $pickup)
+    public function complete(Request $request, Pickup $pickup)
     {
+        $this->authorizeManage($request, $pickup);
+
         $updated = $pickup->deposits()
             ->where('status', Deposit::STATUS_SHIPPED)
             ->update(['status' => Deposit::STATUS_COMPLETED]);
@@ -163,6 +203,28 @@ class PickupController extends Controller
         }
 
         return back()->with('success', "{$updated} setoran ditandai Selesai (diserahkan ke {$pickup->partner?->name}).");
+    }
+
+    /**
+     * Superadmin boleh mengelola semua pengangkutan.
+     * Petugas hanya jika seluruh setoran di pengangkutan berasal dari drop point-nya.
+     */
+    private function canManage(User $user, Pickup $pickup): bool
+    {
+        if (! $user->isLimitedToDropPoint()) {
+            return true;
+        }
+
+        return $user->drop_point_id !== null
+            && $pickup->deposits()->exists()
+            && ! $pickup->deposits()->where('drop_point_id', '!=', $user->drop_point_id)->exists();
+    }
+
+    private function authorizeManage(Request $request, Pickup $pickup): void
+    {
+        if (! $this->canManage($request->user(), $pickup)) {
+            abort(403, 'Pengangkutan ini memuat setoran dari drop point lain.');
+        }
     }
 
     private function partnerOptions(?int $currentId = null)
@@ -177,10 +239,11 @@ class PickupController extends Controller
     /**
      * Setoran yang siap diangkut: Terkumpul dan belum masuk pengangkutan.
      */
-    private function availableDeposits()
+    private function availableDeposits(User $user)
     {
         return Deposit::with(['user', 'dropPoint'])
             ->withCount('items')
+            ->when($user->isLimitedToDropPoint(), fn ($query) => $query->where('drop_point_id', $user->drop_point_id))
             ->where('status', Deposit::STATUS_COLLECTED)
             ->whereNull('pickup_id')
             ->orderBy('drop_point_id')

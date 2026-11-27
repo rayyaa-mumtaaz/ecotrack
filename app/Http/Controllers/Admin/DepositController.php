@@ -15,13 +15,17 @@ use Illuminate\Validation\Rule;
 /**
  * Modul 4 — Deposit Management (admin).
  * Satu setoran (deposits) berisi banyak barang (deposit_items).
+ * Superadmin melihat semua drop point; petugas hanya drop point tempat ia bertugas.
  */
 class DepositController extends Controller
 {
     public function index(Request $request)
     {
+        $user = $request->user();
+
         $deposits = Deposit::with(['user', 'dropPoint', 'receiver'])
             ->withCount('items')
+            ->when($user->isLimitedToDropPoint(), fn ($query) => $query->where('drop_point_id', $user->drop_point_id))
             ->when($request->query('search'), function ($query, $search) {
                 $query->where(function ($query) use ($search) {
                     $query->where('deposit_number', 'like', "%{$search}%")
@@ -37,20 +41,25 @@ class DepositController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        $dropPoints = DropPoint::orderBy('name')->pluck('name', 'id');
+        // Filter drop point hanya untuk superadmin (petugas sudah dibatasi ke drop point-nya)
+        $dropPoints = $user->isSuperadmin() ? DropPoint::orderBy('name')->pluck('name', 'id') : collect();
 
         return view('admin.deposits.index', compact('deposits', 'dropPoints'));
     }
 
     public function create(Request $request)
     {
+        if ($response = $this->rejectIfUnassigned($request)) {
+            return $response;
+        }
+
         // Drop point default = drop point tempat admin yang login bertugas
         $deposit = new Deposit([
             'deposit_date' => now()->toDateString(),
             'drop_point_id' => $request->user()->drop_point_id,
         ]);
 
-        return view('admin.deposits.create', $this->formData($deposit));
+        return view('admin.deposits.create', $this->formData($deposit, $request->user()));
     }
 
     /**
@@ -59,6 +68,10 @@ class DepositController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->rejectIfUnassigned($request)) {
+            return $response;
+        }
+
         $data = $this->validateDeposit($request);
 
         $deposit = DB::transaction(function () use ($data, $request) {
@@ -82,22 +95,26 @@ class DepositController extends Controller
             ->with('success', "Setoran {$deposit->deposit_number} berhasil dicatat.");
     }
 
-    public function show(Deposit $deposit)
+    public function show(Request $request, Deposit $deposit)
     {
+        $this->authorizeDropPoint($request, $deposit);
+
         $deposit->load(['user', 'dropPoint', 'receiver', 'items.category', 'pickup.partner']);
 
         return view('admin.deposits.show', compact('deposit'));
     }
 
-    public function edit(Deposit $deposit)
+    public function edit(Request $request, Deposit $deposit)
     {
+        $this->authorizeDropPoint($request, $deposit);
+
         if ($response = $this->rejectIfNotEditable($deposit)) {
             return $response;
         }
 
         $deposit->load('items');
 
-        return view('admin.deposits.edit', $this->formData($deposit));
+        return view('admin.deposits.edit', $this->formData($deposit, $request->user()));
     }
 
     /**
@@ -105,6 +122,8 @@ class DepositController extends Controller
      */
     public function update(Request $request, Deposit $deposit)
     {
+        $this->authorizeDropPoint($request, $deposit);
+
         if ($response = $this->rejectIfNotEditable($deposit)) {
             return $response;
         }
@@ -128,8 +147,10 @@ class DepositController extends Controller
             ->with('success', "Setoran {$deposit->deposit_number} berhasil diperbarui.");
     }
 
-    public function destroy(Deposit $deposit)
+    public function destroy(Request $request, Deposit $deposit)
     {
+        $this->authorizeDropPoint($request, $deposit);
+
         if ($response = $this->rejectIfNotEditable($deposit)) {
             return $response;
         }
@@ -146,6 +167,8 @@ class DepositController extends Controller
      */
     public function updateStatus(Request $request, Deposit $deposit)
     {
+        $this->authorizeDropPoint($request, $deposit);
+
         $request->validate([
             'status' => ['required', Rule::in(array_keys(Deposit::STATUSES))],
         ]);
@@ -166,6 +189,31 @@ class DepositController extends Controller
     }
 
     /**
+     * Petugas hanya boleh membuka setoran dari drop point tempat ia bertugas.
+     */
+    private function authorizeDropPoint(Request $request, Deposit $deposit): void
+    {
+        if (! $request->user()->canAccessDropPoint($deposit->drop_point_id)) {
+            abort(403, 'Setoran ini berasal dari drop point lain.');
+        }
+    }
+
+    /**
+     * Petugas yang belum ditugaskan ke drop point tidak dapat mencatat setoran.
+     */
+    private function rejectIfUnassigned(Request $request)
+    {
+        $user = $request->user();
+
+        if ($user->isLimitedToDropPoint() && $user->drop_point_id === null) {
+            return redirect()->route('admin.deposits.index')
+                ->with('error', 'Anda belum ditugaskan ke drop point. Hubungi superadmin.');
+        }
+
+        return null;
+    }
+
+    /**
      * Setoran yang sudah diangkut/selesai tidak boleh diubah atau dihapus.
      */
     private function rejectIfNotEditable(Deposit $deposit)
@@ -180,6 +228,11 @@ class DepositController extends Controller
 
     private function validateDeposit(Request $request, ?Deposit $deposit = null): array
     {
+        // Petugas selalu mencatat di drop point tempat ia bertugas (input form diabaikan)
+        if ($request->user()->isLimitedToDropPoint()) {
+            $request->merge(['drop_point_id' => $request->user()->drop_point_id]);
+        }
+
         return $request->validate([
             'user_id' => ['required', Rule::exists('users', 'id')->where('role', User::ROLE_USER)],
             // Drop point harus aktif; saat ubah, drop point lama tetap boleh walau sudah nonaktif
@@ -204,15 +257,18 @@ class DepositController extends Controller
     /**
      * Data pilihan untuk form tambah/ubah.
      */
-    private function formData(Deposit $deposit): array
+    private function formData(Deposit $deposit, User $actor): array
     {
         return [
             'deposit' => $deposit,
             'users' => User::where('role', User::ROLE_USER)->orderBy('name')->get()
                 ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} ({$user->email})"]),
-            'dropPoints' => DropPoint::where('is_active', true)
-                ->orWhere('id', $deposit->drop_point_id)
-                ->orderBy('name')->pluck('name', 'id'),
+            // Petugas hanya melihat drop point-nya sendiri
+            'dropPoints' => $actor->isLimitedToDropPoint()
+                ? DropPoint::where('id', $actor->drop_point_id)->pluck('name', 'id')
+                : DropPoint::where('is_active', true)
+                    ->orWhere('id', $deposit->drop_point_id)
+                    ->orderBy('name')->pluck('name', 'id'),
             'categories' => Category::where('is_active', true)->orderBy('name')->pluck('name', 'id'),
         ];
     }

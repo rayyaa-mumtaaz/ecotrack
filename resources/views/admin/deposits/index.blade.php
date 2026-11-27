@@ -16,12 +16,15 @@
                     <option value="{{ $value }}" @selected(request('status') === $value)>{{ $label }}</option>
                 @endforeach
             </select>
-            <select name="drop_point_id" class="{{ $filterClass }}">
-                <option value="">Semua drop point</option>
-                @foreach ($dropPoints as $id => $name)
-                    <option value="{{ $id }}" @selected((string) request('drop_point_id') === (string) $id)>{{ $name }}</option>
-                @endforeach
-            </select>
+            {{-- Filter drop point hanya untuk superadmin; petugas otomatis melihat drop point-nya --}}
+            @if ($dropPoints->isNotEmpty())
+                <select name="drop_point_id" class="{{ $filterClass }}">
+                    <option value="">Semua drop point</option>
+                    @foreach ($dropPoints as $id => $name)
+                        <option value="{{ $id }}" @selected((string) request('drop_point_id') === (string) $id)>{{ $name }}</option>
+                    @endforeach
+                </select>
+            @endif
             <input type="date" name="from" value="{{ request('from') }}" class="{{ $filterClass }}" title="Dari tanggal">
             <input type="date" name="to" value="{{ request('to') }}" class="{{ $filterClass }}" title="Sampai tanggal">
         </x-search-bar>

@@ -47,7 +47,7 @@
                     </form>
                 @elseif ($deposit->status === \App\Models\Deposit::STATUS_COLLECTED)
                     <p class="mt-5 rounded-lg bg-blue-50 px-3 py-2 text-xs text-blue-700">
-                        Status berubah menjadi Diangkut saat setoran dimasukkan ke pengangkutan (Stage 6).
+                        Status berubah menjadi Diangkut saat setoran dimasukkan ke pengangkutan.
                     </p>
                 @endif
             </x-card>

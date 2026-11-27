@@ -10,14 +10,16 @@ class CheckUserRole
 {
     /**
      * Memeriksa role pengguna yang login.
-     * Contoh pemakaian di route: ->middleware('role:admin')
+     * Contoh pemakaian di route:
+     *   ->middleware('role:superadmin')        hanya superadmin
+     *   ->middleware('role:superadmin,admin')  superadmin atau petugas
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
-        // Jika role tidak sesuai, tolak dengan HTTP 403 (Forbidden)
-        if (! $request->user() || $request->user()->role !== $role) {
+        // Jika role tidak termasuk daftar yang diizinkan, tolak dengan HTTP 403 (Forbidden)
+        if (! $request->user() || ! in_array($request->user()->role, $roles, true)) {
             abort(403, 'Anda tidak memiliki akses ke halaman ini.');
         }
 

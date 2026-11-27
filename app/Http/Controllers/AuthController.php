@@ -57,11 +57,11 @@ class AuthController extends Controller
     }
 
     /**
-     * Halaman awal sesuai role: admin ke dashboard, user ke riwayat setoran.
+     * Halaman awal sesuai role: superadmin & petugas ke dashboard, user ke riwayat setoran.
      */
     public static function homeRoute(): string
     {
-        return Auth::user()?->isAdmin()
+        return Auth::user()?->isStaff()
             ? route('admin.dashboard')
             : route('my-deposits.index');
     }

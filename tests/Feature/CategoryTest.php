@@ -16,14 +16,14 @@ class CategoryTest extends TestCase
 
     private function admin(): User
     {
-        return User::factory()->create(['role' => User::ROLE_ADMIN]);
+        return User::factory()->create(['role' => User::ROLE_SUPERADMIN]);
     }
 
     public function test_admin_can_see_categories(): void
     {
         $this->seed();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
             ->get('/admin/categories')
             ->assertOk()
             ->assertSee('Perangkat komputer');
@@ -69,7 +69,7 @@ class CategoryTest extends TestCase
         $this->seed();
         $category = Category::where('name', 'Perangkat komputer')->first();
 
-        $this->actingAs(User::where('email', 'admin@ecotrack.test')->first())
+        $this->actingAs(User::where('email', 'superadmin@ecotrack.com')->first())
             ->delete("/admin/categories/{$category->id}")
             ->assertSessionHas('error');
 

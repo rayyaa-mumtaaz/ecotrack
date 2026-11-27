@@ -57,14 +57,21 @@ class ReportController extends Controller
         $start = $request->query('start_date');
         $end = $request->query('end_date');
 
-        // Filter tanggal yang dipakai berulang untuk setoran dan pengangkutan
-        $depositFilter = function ($query) use ($start, $end) {
+        // Petugas hanya melihat laporan drop point tempat ia bertugas; superadmin semua drop point
+        $user = $request->user();
+        $dropPointId = $user->isLimitedToDropPoint() ? $user->drop_point_id : null;
+        $limited = $user->isLimitedToDropPoint();
+
+        // Filter tanggal (dan drop point) yang dipakai berulang untuk setoran dan pengangkutan
+        $depositFilter = function ($query) use ($start, $end, $limited, $dropPointId) {
             $query->when($start, fn ($query) => $query->whereDate('deposit_date', '>=', $start))
-                ->when($end, fn ($query) => $query->whereDate('deposit_date', '<=', $end));
+                ->when($end, fn ($query) => $query->whereDate('deposit_date', '<=', $end))
+                ->when($limited, fn ($query) => $query->where('drop_point_id', $dropPointId));
         };
-        $pickupFilter = function ($query) use ($start, $end) {
+        $pickupFilter = function ($query) use ($start, $end, $limited, $dropPointId) {
             $query->when($start, fn ($query) => $query->whereDate('pickup_date', '>=', $start))
-                ->when($end, fn ($query) => $query->whereDate('pickup_date', '<=', $end));
+                ->when($end, fn ($query) => $query->whereDate('pickup_date', '<=', $end))
+                ->when($limited, fn ($query) => $query->whereHas('deposits', fn ($query) => $query->where('drop_point_id', $dropPointId)));
         };
 
         $statusCounts = Deposit::where($depositFilter)
@@ -139,6 +146,7 @@ class ReportController extends Controller
                 'start_date' => $start,
                 'end_date' => $end,
                 'label' => $this->periodLabel($start, $end),
+                'drop_point' => $limited ? ($user->dropPoint?->name ?? 'Belum ditugaskan') : 'Semua drop point',
             ],
             'generatedAt' => now()->translatedFormat('d F Y H:i'),
             'summary' => $summary,

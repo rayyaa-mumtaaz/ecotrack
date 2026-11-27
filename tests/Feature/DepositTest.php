@@ -185,7 +185,7 @@ class DepositTest extends TestCase
     public function test_admin_can_filter_deposits(): void
     {
         $this->seed();
-        $admin = User::where('email', 'admin@ecotrack.test')->first();
+        $admin = User::where('email', 'superadmin@ecotrack.com')->first();
 
         $this->actingAs($admin)
             ->get('/admin/deposits?status=completed')
@@ -202,7 +202,7 @@ class DepositTest extends TestCase
     public function test_user_sees_only_own_deposits(): void
     {
         $this->seed();
-        $rayyaa = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $rayyaa = User::where('email', 'rayyaa@ecotrack.com')->first();
 
         $this->actingAs($rayyaa)
             ->get('/my-deposits')
@@ -215,21 +215,21 @@ class DepositTest extends TestCase
     public function test_user_can_track_own_deposit_detail(): void
     {
         $this->seed();
-        $rayyaa = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $rayyaa = User::where('email', 'rayyaa@ecotrack.com')->first();
         $deposit = Deposit::where('deposit_number', 'DEP-20261020-0001')->first();
 
         $this->actingAs($rayyaa)
             ->get("/my-deposits/{$deposit->id}")
             ->assertOk()
             ->assertSee('Laptop bekas')
-            ->assertSee('Admin EcoTrack')              // diterima oleh
-            ->assertSee('Mitra Daur Ulang Contoh');    // diserahkan ke mitra
+            ->assertSee('Petugas Lapangan STS')        // diterima oleh
+            ->assertSee('CV Lestari Daur Elektronik'); // diserahkan ke mitra
     }
 
     public function test_user_cannot_open_other_users_deposit(): void
     {
         $this->seed();
-        $rayyaa = User::where('email', 'rayyaa@ecotrack.test')->first();
+        $rayyaa = User::where('email', 'rayyaa@ecotrack.com')->first();
         $tristanDeposit = Deposit::where('deposit_number', 'DEP-20261103-0001')->first();
 
         $this->actingAs($rayyaa)->get("/my-deposits/{$tristanDeposit->id}")->assertForbidden();

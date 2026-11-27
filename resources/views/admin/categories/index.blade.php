@@ -4,7 +4,9 @@
 
 @section('content')
     <x-page-header title="Kategori E-Waste" description="Pengelompokan barang elektronik yang disetorkan.">
-        <x-button :href="route('admin.categories.create')">+ Tambah Kategori</x-button>
+        @if (auth()->user()->isSuperadmin())
+            <x-button :href="route('admin.categories.create')">+ Tambah Kategori</x-button>
+        @endif
     </x-page-header>
 
     <x-card :padding="false">
@@ -36,8 +38,10 @@
                                 </td>
                                 <td class="px-5 py-3"><x-active-badge :active="$category->is_active" /></td>
                                 <td class="whitespace-nowrap px-5 py-3 text-right">
-                                    <x-table-actions :edit="route('admin.categories.edit', $category)"
-                                        :destroy="route('admin.categories.destroy', $category)" :name="'kategori ' . $category->name" />
+                                    @if (auth()->user()->isSuperadmin())
+                                        <x-table-actions :edit="route('admin.categories.edit', $category)"
+                                            :destroy="route('admin.categories.destroy', $category)" :name="'kategori ' . $category->name" />
+                                    @endif
                                 </td>
                             </tr>
                         @endforeach

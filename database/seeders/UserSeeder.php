@@ -15,28 +15,28 @@ class UserSeeder extends Seeder
     {
         $dropPoints = DropPoint::pluck('id', 'name');
 
-        // Admin / petugas, masing-masing ditugaskan ke satu drop point
+        // Superadmin (koordinator): tidak ditugaskan ke drop point tertentu
         User::create([
-            'name' => 'Admin EcoTrack',
-            'email' => 'admin@ecotrack.test',
+            'name' => 'Koordinator EcoTrack',
+            'email' => 'superadmin@ecotrack.com',
             'password' => 'password',
-            'role' => User::ROLE_ADMIN,
-            'drop_point_id' => $dropPoints['Drop Point Gedung Utama'],
+            'role' => User::ROLE_SUPERADMIN,
         ]);
 
+        // Petugas drop point
         User::create([
-            'name' => 'Petugas Perpustakaan',
-            'email' => 'petugas@ecotrack.test',
+            'name' => 'Petugas Lapangan STS',
+            'email' => 'petugas@ecotrack.com',
             'password' => 'password',
             'role' => User::ROLE_ADMIN,
-            'drop_point_id' => $dropPoints['Drop Point Perpustakaan'],
+            'drop_point_id' => $dropPoints['Drop Point Lapangan STS'],
         ]);
 
         // User / penyetor
         $users = [
-            ['name' => 'Rayyaa', 'email' => 'rayyaa@ecotrack.test'],
-            ['name' => 'Tristan', 'email' => 'tristan@ecotrack.test'],
-            ['name' => 'Mumtaaz', 'email' => 'mumtaaz@ecotrack.test'],
+            ['name' => 'Rayyaa', 'email' => 'rayyaa@ecotrack.com'],
+            ['name' => 'Tristan', 'email' => 'tristan@ecotrack.com'],
+            ['name' => 'Mumtaaz', 'email' => 'mumtaaz@ecotrack.com'],
         ];
 
         foreach ($users as $user) {
