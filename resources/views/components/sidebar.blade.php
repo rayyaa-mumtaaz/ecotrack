@@ -6,6 +6,7 @@
         ['label' => 'Pengangkutan', 'route' => 'admin.pickups.index', 'active' => 'admin.pickups.*', 'icon' => 'truck'],
         ['label' => 'Kategori', 'route' => 'admin.categories.index', 'active' => 'admin.categories.*', 'icon' => 'tag'],
         ['label' => 'Drop Point', 'route' => 'admin.drop-points.index', 'active' => 'admin.drop-points.*', 'icon' => 'map-pin'],
+        ['label' => 'Mitra', 'route' => 'admin.partners.index', 'active' => 'admin.partners.*', 'icon' => 'recycle'],
         ['label' => 'Pengguna', 'route' => 'admin.users.index', 'active' => 'admin.users.*', 'icon' => 'users'],
         ['label' => 'Laporan', 'route' => 'admin.reports.index', 'active' => 'admin.reports.*', 'icon' => 'chart'],
     ];

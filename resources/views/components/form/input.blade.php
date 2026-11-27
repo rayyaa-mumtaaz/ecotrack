@@ -7,7 +7,7 @@
 <div>
     <label for="{{ $name }}" class="mb-1 block text-sm font-medium text-gray-700">
         {{ $label }}
-        @if ($attributes->has('required'))
+        @if ($attributes->get('required'))
             <span class="text-red-500">*</span>
         @endif
     </label>
